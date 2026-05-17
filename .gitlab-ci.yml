@@ -2,6 +2,7 @@
 stages:
   - test
   - build
+  - publish
 
 include:
   - component: $CI_SERVER_FQDN/ci/sast/sast@1
@@ -25,6 +26,15 @@ include:
       binary_name: tsblock
       working_dir: src/tsblock
       build_architectures: linux/amd64,linux/arm64
+  - component: $CI_SERVER_FQDN/ci/release/package-registry@1
+    inputs:
+      job_name: publish binaries
+      package_name: tsblock
+      package_tag: latest
+      dependant_job: compile binary
+      local_files: >-
+        binaries/tsblock-${CI_COMMIT_REF_NAME}-linux-amd64:tsblock-linux-amd64,
+        binaries/tsblock-${CI_COMMIT_REF_NAME}-linux-arm64:tsblock-linux-arm64
 
 .build rules: &build-rules
   rules:
@@ -91,3 +101,6 @@ compile binary:
   <<:
     - *build-rules
     - *apply-patches-prepare-binary-compile-tsblock
+
+publish binaries:
+  <<: *build-rules

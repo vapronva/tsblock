@@ -7,9 +7,9 @@
 This project includes components from:
 
 - **tsblock**
-  - [`tsblock`](https://github.com/ciffelia/tsblock) is a project by [ciffelia](https://github.com/ciffelia) and [Contributors](https://github.com/ciffelia/tsblock/graphs/contributors).
-  - Available on [GitHub](https://github.com/ciffelia/tsblock.git).
-  - Licensed under the [GNU General Public License v3.0](https://github.com/ciffelia/tsblock/blob/main/LICENSE).
+  - [`tsblock`](https://github.com/ciffelia/tsblock) is a project by [ciffelia](https://github.com/ciffelia) and [Contributors](https://github.com/ciffelia/tsblock/graphs/contributors)
+  - Available on [GitHub](https://github.com/ciffelia/tsblock.git)
+  - Licensed under the [GNU General Public License v3.0](https://github.com/ciffelia/tsblock/blob/main/LICENSE)
 
 ## Changes Made
 
