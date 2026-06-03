@@ -5,22 +5,23 @@ stages:
   - publish
 
 include:
-  - component: $CI_SERVER_FQDN/ci/sast/sast@1
-  - component: $CI_SERVER_FQDN/ci/sast/iac@1
-  - component: $CI_SERVER_FQDN/ci/sast/bearer@1
-  - component: $CI_SERVER_FQDN/ci/sast/datadog@1
-  - component: $CI_SERVER_FQDN/ci/secret-detection/sd@1
-  - component: $CI_SERVER_FQDN/ci/dependency-scanning/ds@1
-  - component: $CI_SERVER_FQDN/ci/golang/init-vet@1
+  - component: $CI_SERVER_FQDN/ci/security/bundle@1
+  - component: $CI_SERVER_FQDN/ci/golang/init-vet@2
     inputs:
-      working_dir: src/tsblock
-  - component: $CI_SERVER_FQDN/ci/golang/lint@1
+      working_dirs: [src/tsblock]
+      pre_script:
+        - if [ -d "src/patches" ] && [ -n "$(ls -A src/patches/*.patch 2>/dev/null)" ]; then cd "./src/tsblock/" || exit; git apply --stat ../patches/*.patch && git apply --binary ../patches/*.patch; cd "../../" || exit; fi
+  - component: $CI_SERVER_FQDN/ci/golang/lint@2
     inputs:
-      working_dir: src/tsblock
-  - component: $CI_SERVER_FQDN/ci/golang/test@1
+      working_dirs: [src/tsblock]
+      pre_script:
+        - if [ -d "src/patches" ] && [ -n "$(ls -A src/patches/*.patch 2>/dev/null)" ]; then cd "./src/tsblock/" || exit; git apply --stat ../patches/*.patch && git apply --binary ../patches/*.patch; cd "../../" || exit; fi
+  - component: $CI_SERVER_FQDN/ci/golang/test@2
     inputs:
-      working_dir: src/tsblock
-  - component: $CI_SERVER_FQDN/ci/golang/build-binaries@1
+      working_dirs: [src/tsblock]
+      pre_script:
+        - if [ -d "src/patches" ] && [ -n "$(ls -A src/patches/*.patch 2>/dev/null)" ]; then cd "./src/tsblock/" || exit; git apply --stat ../patches/*.patch && git apply --binary ../patches/*.patch; cd "../../" || exit; fi
+  - component: $CI_SERVER_FQDN/ci/golang/build-binaries@2
     inputs:
       job_name: compile binary
       binary_name: tsblock
@@ -43,15 +44,6 @@ include:
         - src/tsblock/**/*
         - src/patches/**/*
         - .gitlab-ci.yml
-
-.apply patches: &apply-patches
-  before_script:
-    - |
-      if [ -d "src/patches" ] && [ -n "$(ls -A src/patches/*.patch 2>/dev/null)" ]; then
-        cd "./src/tsblock/" || exit
-        git apply --stat ../patches/*.patch && git apply --binary ../patches/*.patch
-        cd "../../" || exit
-      fi
 
 .apply patches and prepare binary compilation base:
   &apply-patches-prepare-binary-compile-base
@@ -84,18 +76,6 @@ include:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-
-go test:
-  <<:
-    - *apply-patches
-
-golangci-lint:
-  <<:
-    - *apply-patches
-
-init + vet:
-  <<:
-    - *apply-patches
 
 compile binary:
   <<:

@@ -166,3 +166,20 @@ z$Msyo^^(s;cqYPg5k9}0r?9l!z)FNOxoqMvUrKG4YSn5`FQZnio(w}!KNXS=L47u)
 zSq{9jyiPH0c)3i`Tr<b)tHm252YKC#@k?(_HC(=!zN<QJZ!0}S^nu@wR8-gHgumdl
 p%^6+gtA53KFOvnZ$PfLB8uNI|Uzmv}L$lwwyhkj#Vj{U(qJL`ieQ*E(
 
+diff --git a/cgroup.go b/cgroup.go
+index 3511359..a00ba0e 100644
+--- a/cgroup.go
++++ b/cgroup.go
+@@ -2,10 +2,11 @@ package main
+ 
+ import (
+ 	"bufio"
+-	"github.com/cockroachdb/errors"
+ 	"os"
+ 	"os/exec"
+ 	"strings"
++
++	"github.com/cockroachdb/errors"
+ )
+ 
+ // tailscaleCgroup returns the path to the cgroup for tailscaled.service.
