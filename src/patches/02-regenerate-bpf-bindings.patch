@@ -1,5 +1,5 @@
 diff --git a/bpf_bpfeb.go b/bpf_bpfeb.go
-index 6709fa2..4e9b746 100644
+index 6709fa2..93592c6 100644
 --- a/bpf_bpfeb.go
 +++ b/bpf_bpfeb.go
 @@ -1,5 +1,5 @@
@@ -9,7 +9,33 @@ index 6709fa2..4e9b746 100644
  
  package main
  
-@@ -47,9 +47,10 @@ func loadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
+@@ -12,6 +12,16 @@ import (
+ 	"github.com/cilium/ebpf"
+ )
+ 
++// Names of all BPF objects in the ELF.
++//
++// Used for safe lookups in a Collection or CollectionSpec.
++const (
++	bpfMapIfacesMap                         = "ifaces_map"
++	bpfProgRestrictNetworkInterfacesEgress  = "restrict_network_interfaces_egress"
++	bpfProgRestrictNetworkInterfacesIngress = "restrict_network_interfaces_ingress"
++	bpfVarIsAllowList                       = "is_allow_list"
++)
++
+ // loadBpf returns the embedded CollectionSpec for bpf.
+ func loadBpf() (*ebpf.CollectionSpec, error) {
+ 	reader := bytes.NewReader(_BpfBytes)
+@@ -32,7 +42,7 @@ func loadBpf() (*ebpf.CollectionSpec, error) {
+ //	*bpfMaps
+ //
+ // See ebpf.CollectionSpec.LoadAndAssign documentation for details.
+-func loadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
++func loadBpfObjects(obj any, opts *ebpf.CollectionOptions) error {
+ 	spec, err := loadBpf()
+ 	if err != nil {
+ 		return err
+@@ -47,9 +57,10 @@ func loadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
  type bpfSpecs struct {
  	bpfProgramSpecs
  	bpfMapSpecs
@@ -21,7 +47,7 @@ index 6709fa2..4e9b746 100644
  //
  // It can be passed ebpf.CollectionSpec.Assign.
  type bpfProgramSpecs struct {
-@@ -64,12 +65,20 @@ type bpfMapSpecs struct {
+@@ -64,12 +75,20 @@ type bpfMapSpecs struct {
  	IfacesMap *ebpf.MapSpec `ebpf:"ifaces_map"`
  }
  
@@ -42,7 +68,7 @@ index 6709fa2..4e9b746 100644
  }
  
  func (o *bpfObjects) Close() error {
-@@ -92,6 +101,13 @@ func (m *bpfMaps) Close() error {
+@@ -92,6 +111,13 @@ func (m *bpfMaps) Close() error {
  	)
  }
  
@@ -83,7 +109,7 @@ zC<<G3G^6O8-on;-P01FvW;D%k=tcaTEWYa<Dtc48JLK@D_u6n*d9nP!a67$zd4T96
 yzZ;r0+%6CKSDg(}uJMw8!TBK6;7xzl@B;4p^AjaixayV4Pu){Vv-;VRRs9RheR<RX
 
 diff --git a/bpf_bpfel.go b/bpf_bpfel.go
-index 4758442..ee19524 100644
+index 4758442..cb2dd31 100644
 --- a/bpf_bpfel.go
 +++ b/bpf_bpfel.go
 @@ -1,5 +1,5 @@
@@ -93,7 +119,33 @@ index 4758442..ee19524 100644
  
  package main
  
-@@ -47,9 +47,10 @@ func loadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
+@@ -12,6 +12,16 @@ import (
+ 	"github.com/cilium/ebpf"
+ )
+ 
++// Names of all BPF objects in the ELF.
++//
++// Used for safe lookups in a Collection or CollectionSpec.
++const (
++	bpfMapIfacesMap                         = "ifaces_map"
++	bpfProgRestrictNetworkInterfacesEgress  = "restrict_network_interfaces_egress"
++	bpfProgRestrictNetworkInterfacesIngress = "restrict_network_interfaces_ingress"
++	bpfVarIsAllowList                       = "is_allow_list"
++)
++
+ // loadBpf returns the embedded CollectionSpec for bpf.
+ func loadBpf() (*ebpf.CollectionSpec, error) {
+ 	reader := bytes.NewReader(_BpfBytes)
+@@ -32,7 +42,7 @@ func loadBpf() (*ebpf.CollectionSpec, error) {
+ //	*bpfMaps
+ //
+ // See ebpf.CollectionSpec.LoadAndAssign documentation for details.
+-func loadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
++func loadBpfObjects(obj any, opts *ebpf.CollectionOptions) error {
+ 	spec, err := loadBpf()
+ 	if err != nil {
+ 		return err
+@@ -47,9 +57,10 @@ func loadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
  type bpfSpecs struct {
  	bpfProgramSpecs
  	bpfMapSpecs
@@ -105,7 +157,7 @@ index 4758442..ee19524 100644
  //
  // It can be passed ebpf.CollectionSpec.Assign.
  type bpfProgramSpecs struct {
-@@ -64,12 +65,20 @@ type bpfMapSpecs struct {
+@@ -64,12 +75,20 @@ type bpfMapSpecs struct {
  	IfacesMap *ebpf.MapSpec `ebpf:"ifaces_map"`
  }
  
@@ -126,7 +178,7 @@ index 4758442..ee19524 100644
  }
  
  func (o *bpfObjects) Close() error {
-@@ -92,6 +101,13 @@ func (m *bpfMaps) Close() error {
+@@ -92,6 +111,13 @@ func (m *bpfMaps) Close() error {
  	)
  }
  
@@ -166,20 +218,3 @@ z$Msyo^^(s;cqYPg5k9}0r?9l!z)FNOxoqMvUrKG4YSn5`FQZnio(w}!KNXS=L47u)
 zSq{9jyiPH0c)3i`Tr<b)tHm252YKC#@k?(_HC(=!zN<QJZ!0}S^nu@wR8-gHgumdl
 p%^6+gtA53KFOvnZ$PfLB8uNI|Uzmv}L$lwwyhkj#Vj{U(qJL`ieQ*E(
 
-diff --git a/cgroup.go b/cgroup.go
-index 3511359..a00ba0e 100644
---- a/cgroup.go
-+++ b/cgroup.go
-@@ -2,10 +2,11 @@ package main
- 
- import (
- 	"bufio"
--	"github.com/cockroachdb/errors"
- 	"os"
- 	"os/exec"
- 	"strings"
-+
-+	"github.com/cockroachdb/errors"
- )
- 
- // tailscaleCgroup returns the path to the cgroup for tailscaled.service.

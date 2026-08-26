@@ -1,23 +1,8 @@
 diff --git a/main.go b/main.go
-index cdef401..625de01 100644
+index 6e25ccf..625de01 100644
 --- a/main.go
 +++ b/main.go
-@@ -1,19 +1,20 @@
- package main
- 
- import (
-+	"log"
-+	"regexp"
-+
- 	"github.com/cilium/ebpf"
- 	"github.com/cilium/ebpf/link"
- 	"github.com/cilium/ebpf/rlimit"
- 	"github.com/cockroachdb/errors"
- 	"github.com/vishvananda/netlink"
- 	"golang.org/x/sys/unix"
--	"log"
--	"regexp"
- )
+@@ -14,7 +14,7 @@ import (
  
  //go:generate go run github.com/cilium/ebpf/cmd/bpf2go bpf bpf.c
  
@@ -26,7 +11,7 @@ index cdef401..625de01 100644
  
  func main() {
  	// Allow the current process to lock memory for eBPF resources.
-@@ -61,7 +62,7 @@ func main() {
+@@ -62,7 +62,7 @@ func main() {
  	ch := make(chan netlink.LinkUpdate)
  	done := make(chan struct{})
  	handleError := func(err error) {
