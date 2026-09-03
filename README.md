@@ -13,7 +13,7 @@ This project includes components from:
 
 ## Changes Made
 
-- Bump the Go toolchain and module dependencies (Go 1.21 → 1.27, `cilium/ebpf` 0.11 → 0.22, transitive deps)
+- Bump the Go toolchain and module dependencies (Go 1.21 → 1.27.1, `cilium/ebpf` 0.11 → 0.22, transitive deps)
 - Regenerate the eBPF bindings and objects (`bpf2go`) against the updated `cilium/ebpf`
 - Block interfaces matching `^cmld` in addition
 - Log netlink subscription errors instead of panicking on them

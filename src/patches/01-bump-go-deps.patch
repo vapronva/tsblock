@@ -1,12 +1,12 @@
 diff --git a/go.mod b/go.mod
-index 127d153..42747bd 100644
+index 127d153..b8c1569 100644
 --- a/go.mod
 +++ b/go.mod
 @@ -1,24 +1,23 @@
  module github.com/ciffelia/tsblock
  
 -go 1.21.0
-+go 1.27.0
++go 1.27.1
  
  require (
 -	github.com/cilium/ebpf v0.11.0
