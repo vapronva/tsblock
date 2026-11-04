@@ -13,7 +13,10 @@ This project includes components from:
 
 ## Changes Made
 
-- Bump the Go toolchain and module dependencies (Go 1.21 → 1.27.1, `cilium/ebpf` 0.11 → 0.22, transitive deps)
-- Regenerate the eBPF bindings and objects (`bpf2go`) against the updated `cilium/ebpf`
 - Block interfaces matching `^cmld` in addition
-- Log netlink subscription errors instead of panicking on them
+- Exit non-zero when the netlink link subscription closes
+- Attach only through cgroup `bpf_link` (Linux 5.7+)
+- Replace `cockroachdb/errors` with the standard library
+- Add `tsblock-btf` (matches `cilium_*`, `lxc*` and `cmld*` against `skb->dev->name` inside the BPF program, but needs Linux 6.2+ with BTF and the BPF JIT)
+- Bump Go to 1.27.3 and every module dependency
+- Regenerate the eBPF objects with `bpf2go`

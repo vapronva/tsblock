@@ -1,0 +1,98 @@
+diff --git a/cmd/tsblock-btf/bpf.c b/cmd/tsblock-btf/bpf.c
+new file mode 100644
+index 0000000..58f1cf6
+--- /dev/null
++++ b/cmd/tsblock-btf/bpf.c
+@@ -0,0 +1,43 @@
++//go:build ignore
++
++#include <linux/bpf.h>
++#include <bpf/bpf_helpers.h>
++
++struct net_device {
++	char name[16];
++} __attribute__((preserve_access_index));
++
++struct sk_buff {
++	struct net_device *dev;
++} __attribute__((preserve_access_index));
++
++extern void *bpf_cast_to_kern_ctx(void *ctx) __ksym;
++
++static __always_inline int has_prefix(const char *name, const char *prefix)
++{
++	for (int i = 0; prefix[i]; i++)
++		if (name[i] != prefix[i])
++			return 0;
++	return 1;
++}
++
++static __always_inline int allow(struct __sk_buff *ctx)
++{
++	struct net_device *dev = ((struct sk_buff *)bpf_cast_to_kern_ctx(ctx))->dev;
++
++	return !dev || !(has_prefix(dev->name, "cilium_") || has_prefix(dev->name, "lxc") || has_prefix(dev->name, "cmld"));
++}
++
++SEC("cgroup_skb/egress")
++int tsblock_egress(struct __sk_buff *ctx)
++{
++	return allow(ctx);
++}
++
++SEC("cgroup_skb/ingress")
++int tsblock_ingress(struct __sk_buff *ctx)
++{
++	return allow(ctx);
++}
++
++char LICENSE[] SEC("license") = "GPL";
+diff --git a/cmd/tsblock-btf/main.go b/cmd/tsblock-btf/main.go
+new file mode 100644
+index 0000000..e18697e
+--- /dev/null
++++ b/cmd/tsblock-btf/main.go
+@@ -0,0 +1,43 @@
++package main
++
++import (
++	"context"
++	"errors"
++	"log"
++	"os"
++	"os/signal"
++	"syscall"
++
++	"github.com/cilium/ebpf"
++	"github.com/cilium/ebpf/link"
++)
++
++//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target bpfel bpf bpf.c
++
++const tailscaledCgroup = "/sys/fs/cgroup/system.slice/tailscaled.service"
++
++func main() {
++	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
++	defer stop()
++
++	var objs bpfObjects
++	if err := loadBpfObjects(&objs, nil); err != nil {
++		log.Fatalf("load eBPF objects: %v", err)
++	}
++	egress := attach(objs.TsblockEgress, ebpf.AttachCGroupInetEgress)
++	ingress := attach(objs.TsblockIngress, ebpf.AttachCGroupInetIngress)
++	log.Printf("blocking cilium_*, lxc* and cmld* for %s", tailscaledCgroup)
++
++	<-ctx.Done()
++	if err := errors.Join(ingress.Close(), egress.Close(), objs.Close()); err != nil {
++		log.Fatal(err)
++	}
++}
++
++func attach(prog *ebpf.Program, typ ebpf.AttachType) link.Link {
++	l, err := link.AttachCgroup(link.CgroupOptions{Path: tailscaledCgroup, Attach: typ, Program: prog})
++	if err != nil {
++		log.Fatalf("attach %s to %s: %v", typ, tailscaledCgroup, err)
++	}
++	return l
++}

@@ -1,0 +1,12 @@
+diff --git a/main.go b/main.go
+index 8995a35..5ec8ada 100644
+--- a/main.go
++++ b/main.go
+@@ -76,6 +76,7 @@ func main() {
+ 			panic(errors.Wrap(err, "process LinkUpdate"))
+ 		}
+ 	}
++	panic(errors.New("link subscription closed"))
+ }
+ 
+ func handleLinkUpdate(ifacesMap *ebpf.Map, u *netlink.LinkUpdate) error {

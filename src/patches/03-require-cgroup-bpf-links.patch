@@ -1,0 +1,41 @@
+diff --git a/main.go b/main.go
+index 5ec8ada..814a8c7 100644
+--- a/main.go
++++ b/main.go
+@@ -8,6 +8,7 @@ import (
+ 	"github.com/vishvananda/netlink"
+ 	"golang.org/x/sys/unix"
+ 	"log"
++	"os"
+ 	"regexp"
+ )
+ 
+@@ -35,9 +36,15 @@ func main() {
+ 	defer func() { _ = objs.Close() }()
+ 	log.Println("loaded eBPF programs and maps into the kernel")
+ 
++	cgroup, err := os.Open(tsCgroupPath)
++	if err != nil {
++		panic(errors.Wrap(err, "open the cgroup"))
++	}
++	defer func() { _ = cgroup.Close() }()
++
+ 	// Link eBPF programs to the cgroup.
+-	lEgress, err := link.AttachCgroup(link.CgroupOptions{
+-		Path:    tsCgroupPath,
++	lEgress, err := link.AttachRawLink(link.RawLinkOptions{
++		Target:  int(cgroup.Fd()),
+ 		Attach:  ebpf.AttachCGroupInetEgress,
+ 		Program: objs.RestrictNetworkInterfacesEgress,
+ 	})
+@@ -46,8 +53,8 @@ func main() {
+ 	}
+ 	defer func() { _ = lEgress.Close() }()
+ 
+-	lIngress, err := link.AttachCgroup(link.CgroupOptions{
+-		Path:    tsCgroupPath,
++	lIngress, err := link.AttachRawLink(link.RawLinkOptions{
++		Target:  int(cgroup.Fd()),
+ 		Attach:  ebpf.AttachCGroupInetIngress,
+ 		Program: objs.RestrictNetworkInterfacesIngress,
+ 	})
