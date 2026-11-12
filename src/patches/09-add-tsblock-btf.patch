@@ -49,7 +49,7 @@ index 0000000..58f1cf6
 +char LICENSE[] SEC("license") = "GPL";
 diff --git a/cmd/tsblock-btf/main.go b/cmd/tsblock-btf/main.go
 new file mode 100644
-index 0000000..e18697e
+index 0000000..7b80990
 --- /dev/null
 +++ b/cmd/tsblock-btf/main.go
 @@ -0,0 +1,43 @@
@@ -67,7 +67,7 @@ index 0000000..e18697e
 +	"github.com/cilium/ebpf/link"
 +)
 +
-+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target bpfel bpf bpf.c
++//go:generate go tool bpf2go -target bpfel bpf bpf.c
 +
 +const tailscaledCgroup = "/sys/fs/cgroup/system.slice/tailscaled.service"
 +

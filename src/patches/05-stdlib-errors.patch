@@ -1,59 +1,5 @@
-diff --git a/cgroup.go b/cgroup.go
-index 3511359..24a6add 100644
---- a/cgroup.go
-+++ b/cgroup.go
-@@ -2,7 +2,8 @@ package main
- 
- import (
- 	"bufio"
--	"github.com/cockroachdb/errors"
-+	"errors"
-+	"fmt"
- 	"os"
- 	"os/exec"
- 	"strings"
-@@ -12,12 +13,12 @@ import (
- func tailscaleCgroup() (string, error) {
- 	mp, err := cgroupMountPoint()
- 	if err != nil {
--		return "", errors.Wrap(err, "detect cgroup mount point")
-+		return "", fmt.Errorf("detect cgroup mount point: %w", err)
- 	}
- 
- 	path, err := cgroupByService("tailscaled.service")
- 	if err != nil {
--		return "", errors.Wrap(err, "detect cgroup for tailscaled.service")
-+		return "", fmt.Errorf("detect cgroup for tailscaled.service: %w", err)
- 	}
- 
- 	return mp + path, nil
-@@ -27,7 +28,7 @@ func tailscaleCgroup() (string, error) {
- func cgroupMountPoint() (string, error) {
- 	f, err := os.Open("/proc/mounts")
- 	if err != nil {
--		return "", errors.Wrap(err, "open /proc/mounts")
-+		return "", fmt.Errorf("open /proc/mounts: %w", err)
- 	}
- 	defer func() { _ = f.Close() }()
- 
-@@ -47,13 +48,13 @@ func cgroupMountPoint() (string, error) {
- func cgroupByService(serviceName string) (string, error) {
- 	out, err := exec.Command("systemctl", "show", "--property", "ControlGroup", serviceName).Output()
- 	if err != nil {
--		return "", errors.Wrap(err, "run `systemctl show`")
-+		return "", fmt.Errorf("run `systemctl show`: %w", err)
- 	}
- 
- 	output := string(out)
- 	parts := strings.Split(output, "=")
- 	if len(parts) != 2 {
--		return "", errors.Newf("unexpected output format: %s", output)
-+		return "", fmt.Errorf("unexpected output format: %s", output)
- 	}
- 
- 	c := strings.TrimSpace(parts[1])
 diff --git a/main.go b/main.go
-index 814a8c7..4368faa 100644
+index c78e7c7..a0bb0df 100644
 --- a/main.go
 +++ b/main.go
 @@ -1,15 +1,17 @@
@@ -78,20 +24,13 @@ index 814a8c7..4368faa 100644
  )
  
  //go:generate go run github.com/cilium/ebpf/cmd/bpf2go bpf bpf.c
-@@ -19,26 +21,26 @@ var blockedIfacesName = regexp.MustCompile(`^cilium_|^lxc|^cmld`)
+@@ -21,20 +23,20 @@ const tsCgroupPath = "/sys/fs/cgroup/system.slice/tailscaled.service"
  func main() {
  	// Allow the current process to lock memory for eBPF resources.
  	if err := rlimit.RemoveMemlock(); err != nil {
 -		panic(errors.Wrap(err, "remove memory limit for the current process"))
 +		panic(fmt.Errorf("remove memory limit for the current process: %w", err))
  	}
- 
- 	tsCgroupPath, err := tailscaleCgroup()
- 	if err != nil {
--		panic(errors.Wrap(err, "detect tailscaled cgroup path"))
-+		panic(fmt.Errorf("detect tailscaled cgroup path: %w", err))
- 	}
- 	log.Printf("found cgroup for tailscale: %s\n", tsCgroupPath)
  
  	// Load pre-compiled programs and maps into the kernel.
  	objs := bpfObjects{}
@@ -109,7 +48,7 @@ index 814a8c7..4368faa 100644
  	}
  	defer func() { _ = cgroup.Close() }()
  
-@@ -49,7 +51,7 @@ func main() {
+@@ -45,7 +47,7 @@ func main() {
  		Program: objs.RestrictNetworkInterfacesEgress,
  	})
  	if err != nil {
@@ -118,7 +57,7 @@ index 814a8c7..4368faa 100644
  	}
  	defer func() { _ = lEgress.Close() }()
  
-@@ -59,7 +61,7 @@ func main() {
+@@ -55,7 +57,7 @@ func main() {
  		Program: objs.RestrictNetworkInterfacesIngress,
  	})
  	if err != nil {
@@ -127,7 +66,7 @@ index 814a8c7..4368faa 100644
  	}
  	defer func() { _ = lIngress.Close() }()
  
-@@ -68,19 +70,19 @@ func main() {
+@@ -64,19 +66,19 @@ func main() {
  	ch := make(chan netlink.LinkUpdate)
  	done := make(chan struct{})
  	handleError := func(err error) {
@@ -150,7 +89,7 @@ index 814a8c7..4368faa 100644
  		}
  	}
  	panic(errors.New("link subscription closed"))
-@@ -95,22 +97,22 @@ func handleLinkUpdate(ifacesMap *ebpf.Map, u *netlink.LinkUpdate) error {
+@@ -91,22 +93,22 @@ func handleLinkUpdate(ifacesMap *ebpf.Map, u *netlink.LinkUpdate) error {
  		log.Printf("interface created or updated: %d (%s)\n", ifaceIdx, ifaceName)
  		if blockedIfacesName.MatchString(ifaceName) {
  			if err := blockInterface(ifacesMap, ifaceIdx); err != nil {
@@ -177,7 +116,7 @@ index 814a8c7..4368faa 100644
  	}
  
  	return nil
-@@ -120,7 +122,7 @@ func blockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32) error {
+@@ -116,7 +118,7 @@ func blockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32) error {
  	log.Printf("blocking interface: %d\n", ifaceIdx)
  
  	if err := ifacesMap.Put(ifaceIdx, uint8(0)); err != nil {
@@ -186,7 +125,7 @@ index 814a8c7..4368faa 100644
  	}
  
  	return nil
-@@ -130,7 +132,7 @@ func unblockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32) error {
+@@ -126,7 +128,7 @@ func unblockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32) error {
  	log.Printf("unblocking interface: %d\n", ifaceIdx)
  
  	if err := ifacesMap.Delete(ifaceIdx); err != nil && !errors.Is(err, ebpf.ErrKeyNotExist) {

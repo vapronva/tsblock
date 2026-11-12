@@ -15,8 +15,12 @@ This project includes components from:
 
 - Block interfaces matching `^cmld` in addition
 - Exit non-zero when the netlink link subscription closes
+- Attach to `/sys/fs/cgroup/system.slice/tailscaled.service` directly instead of asking `systemctl`
 - Attach only through cgroup `bpf_link` (Linux 5.7+)
 - Replace `cockroachdb/errors` with the standard library
+- Drop the unused allow-list mode from the BPF program
+- Log only when an interface actually gets blocked or unblocked
+- Run `bpf2go` through the `go.mod` `tool` directive, for little-endian targets only
 - Add `tsblock-btf` (matches `cilium_*`, `lxc*` and `cmld*` against `skb->dev->name` inside the BPF program, but needs Linux 6.2+ with BTF and the BPF JIT)
-- Bump Go to 1.27.3 and every module dependency
+- Bump Go to 1.27.4 and every module dependency
 - Regenerate the eBPF objects with `bpf2go`

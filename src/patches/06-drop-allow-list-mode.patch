@@ -1,0 +1,43 @@
+diff --git a/bpf.c b/bpf.c
+index d9608bd..7aa0979 100644
+--- a/bpf.c
++++ b/bpf.c
+@@ -13,11 +13,7 @@
+ 
+ #define MAX_IFACE_ENTRIES 4096
+ 
+-const volatile __u8 is_allow_list = 0;
+-
+-/* Map containing the network interfaces indexes.
+- * The interpretation of the map depends on the value of is_allow_list.
+- */
++/* Map containing the network interfaces indexes. */
+ struct {
+         __uint(type, BPF_MAP_TYPE_HASH);
+         __type(key, __u32);
+@@ -29,22 +25,9 @@ struct {
+ #define PASS 1
+ 
+ static inline int restrict_network_interfaces_impl(const struct __sk_buff *sk) {
+-        __u32 zero = 0, ifindex;
+-        __u8 *lookup_result;
+-
+-        ifindex = sk->ifindex;
+-        lookup_result = bpf_map_lookup_elem(&ifaces_map, &ifindex);
+-        if (is_allow_list) {
+-                /* allow-list: let the packet pass if iface in the list */
+-                if (lookup_result)
+-                        return PASS;
+-        } else {
+-                /* deny-list: let the packet pass if iface *not* in the list */
+-                if (!lookup_result)
+-                        return PASS;
+-        }
+-
+-        return DROP;
++        __u32 ifindex = sk->ifindex;
++
++        return bpf_map_lookup_elem(&ifaces_map, &ifindex) ? DROP : PASS;
+ }
+ 
+ SEC("cgroup_skb/egress")

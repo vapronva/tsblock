@@ -1,0 +1,72 @@
+diff --git a/main.go b/main.go
+index a0bb0df..2f039f8 100644
+--- a/main.go
++++ b/main.go
+@@ -88,48 +88,32 @@ func handleLinkUpdate(ifacesMap *ebpf.Map, u *netlink.LinkUpdate) error {
+ 	ifaceName := u.Link.Attrs().Name
+ 	ifaceIdx := uint32(u.Index)
+ 
+-	switch u.Header.Type {
+-	case unix.RTM_NEWLINK:
+-		log.Printf("interface created or updated: %d (%s)\n", ifaceIdx, ifaceName)
+-		if blockedIfacesName.MatchString(ifaceName) {
+-			if err := blockInterface(ifacesMap, ifaceIdx); err != nil {
+-				return fmt.Errorf("block interface %d (%s): %w", ifaceIdx, ifaceName, err)
+-			}
+-		} else {
+-			if err := unblockInterface(ifacesMap, ifaceIdx); err != nil {
+-				return fmt.Errorf("unblock interface %d (%s): %w", ifaceIdx, ifaceName, err)
+-			}
+-		}
+-
+-	case unix.RTM_DELLINK:
+-		log.Printf("interface removed: %d (%s)\n", ifaceIdx, ifaceName)
+-		if err := unblockInterface(ifacesMap, ifaceIdx); err != nil {
+-			return fmt.Errorf("unblock interface %d (%s): %w", ifaceIdx, ifaceName, err)
+-		}
+-
+-	default:
+-		return fmt.Errorf("received a netlink message of unknown type %x for interface %d (%s)", u.Header.Type, ifaceIdx, ifaceName)
++	if u.Header.Type == unix.RTM_NEWLINK && blockedIfacesName.MatchString(ifaceName) {
++		return blockInterface(ifacesMap, ifaceIdx, ifaceName)
+ 	}
+-
+-	return nil
++	return unblockInterface(ifacesMap, ifaceIdx, ifaceName)
+ }
+ 
+-func blockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32) error {
+-	log.Printf("blocking interface: %d\n", ifaceIdx)
+-
+-	if err := ifacesMap.Put(ifaceIdx, uint8(0)); err != nil {
+-		return fmt.Errorf("add an entry to ifacesMap: %w", err)
++func blockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32, ifaceName string) error {
++	err := ifacesMap.Update(ifaceIdx, uint8(0), ebpf.UpdateNoExist)
++	if errors.Is(err, ebpf.ErrKeyExist) {
++		return nil
+ 	}
+-
++	if err != nil {
++		return fmt.Errorf("block interface %d (%s): %w", ifaceIdx, ifaceName, err)
++	}
++	log.Printf("blocked interface %d (%s)", ifaceIdx, ifaceName)
+ 	return nil
+ }
+ 
+-func unblockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32) error {
+-	log.Printf("unblocking interface: %d\n", ifaceIdx)
+-
+-	if err := ifacesMap.Delete(ifaceIdx); err != nil && !errors.Is(err, ebpf.ErrKeyNotExist) {
+-		return fmt.Errorf("remove an entry from ifacesMap: %w", err)
++func unblockInterface(ifacesMap *ebpf.Map, ifaceIdx uint32, ifaceName string) error {
++	err := ifacesMap.Delete(ifaceIdx)
++	if errors.Is(err, ebpf.ErrKeyNotExist) {
++		return nil
+ 	}
+-
++	if err != nil {
++		return fmt.Errorf("unblock interface %d (%s): %w", ifaceIdx, ifaceName, err)
++	}
++	log.Printf("unblocked interface %d (%s)", ifaceIdx, ifaceName)
+ 	return nil
+ }
